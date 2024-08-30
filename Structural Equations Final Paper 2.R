@@ -2,10 +2,9 @@
 #H1: Religiosity predicts prejudice against women
 #H2: This relationship is mediated by higher levels of authoritarian-traditionalism in highly religious individuals
 #H3: This relationship (both direct and indirect) would be stronger in a collectivistic culture (Croatia) than in an individualistic culture (Netherlands)
-#H4: Across cultures, this relationship would be stronger in men than in women
+#H4: Across cultures, this relationship will be different for men than for women
 
-ess2 <- read.csv("C:/Users/riley/OneDrive/Desktop/ESS11.csv")
-ess2$ag
+ess <- read.csv("C:/Users/riley/OneDrive/Desktop/ESS11.csv")
 
 library("haven")        
 library("dplyr")      
@@ -16,16 +15,13 @@ library("purrr")
 ### MODELING ###
 library("lavaan")       
 library("MVN") # Multivariate normality
-library("Amelia") #Multiple imputation
-library("semTools") #Fit model to multiple imputed data (loaded later for compatibility issues)
 
 ### VISUALIZATION ###
 library("tidySEM")
 library("ggplot2")              
 library("patchwork")    
 
-ess_nlhr <- ess2
-ess_nlhr <- filter(ess2, cntry == c('NL', 'HR'))
+ess_nlhr <- filter(ess, cntry == c('NL', 'HR'))
 sum(ess_nlhr$cntry =='HR')
 mean(ess_nlhr$gndr == '2')
 sum(ess_nlhr$cntry[ess_nlhr$gndr == '2'] == 'NL')
@@ -37,53 +33,6 @@ mean(ess_nlhr$agea[ess_nlhr$cntry == 'NL'])
 mean(ess_nlhr$agea[ess_nlhr$cntry == 'HR'])
 
 ess_nlhr_fp <- ess_nlhr %>% select(
-  ## Subjective Well-Being
-  happy, # How happy are you
-  inprdsc, # Feel like you can confide in others
-  health, # Subjective general health
-  ctrlife, # Feeling of control over life
-  
-  ## Prosocial values
-  actcomp, # Act compassionately
-  sothnds, # Sensitive to needs of others
-  ipeqopta, # Everyone should be treated equally
-  iphlppla, # Important to help others
-  
-  ## Social Trust
-  ppltrst, # People can be trusted
-  pplfair, # People try to be fair
-  pplhlp, # People try to help others
-  
-  ## Faith in Institutions
-  trstplc, # Police
-  trstplt, # Politicians
-  trstprl, # Parliament
-  trstlgl, # Legal system
-  
-  ## Satisfaction with Institutions
-  stfeco, # Economy
-  stfdem, # Democracy
-  stfedu, # Health services
-  psppsgva, # System lets people have say
-  psppipla, # System lets people influence
-  
-  ## Pleasure-Seeking Attitudes
-  impdiffa, # Important to try new things
-  ipgdtima, # Important to have a good time
-  ipadvnta, # Important to seek adventure
-  impfuna, # Important to have fun
-  
-  ## Social Health
-  sclmeet,
-  inprdsc,
-  sclact,
-  
-  ## Depressive Symptoms
-  fltdpr, # Felt depressed
-  flteeff, # Everything takes effort
-  slprl, # Restless sleep
-  fltlnl, # Felt lonely
-  cldgng, # Couldn't get going
   
   ## Religiosity
   rlgdgr, # Religious
@@ -100,17 +49,14 @@ ess_nlhr_fp <- ess_nlhr %>% select(
   imptrada, # Tradition is important
   ipfrulea, # Important to follow rules
   ipbhprpa, # Important to behave properly
-  loylead, # Kids should obey leaders
   lrnobed, # Kids need to respect authority
-  hmsfmlsh, # Ashamed if family member is gay
-  hmsacld, # Gays should be able to adopt
   ipmodsta, # Important to be modest
   
   gndr,
   cntry
 )
 
-ess_nlhr = filter(ess_nlhr_fp,
+ess_nlhr = filter(ess_nlhr_fp, # Removing irrelevant data ("I don't know" or "Refused to answer")
                   ## Religiosity
                     rlgdgr != '88' & rlgdgr != '77' &
                     rlgatnd != '88' & rlgatnd != '77' &
@@ -120,68 +66,21 @@ ess_nlhr = filter(ess_nlhr_fp,
                     weasoff != '8' & weasoff != '7' &
                     wexashr != '8' & wexashr != '7' &
                     wprtbym != '8' &
-                  ## Depressive Symptoms
-                  fltdpr != '8' & fltdpr != '7' &
-                    flteeff != '8' & flteeff != '7' &
-                    slprl != '8' & slprl != '7' &
-                    fltlnl != '8' & fltlnl != '7' &
-                    cldgng != '8' & cldgng != '7' &
-                  ## Social Health
-                    sclmeet != '88' & sclmeet != '77' &
-                    inprdsc != '88' & inprdsc != '77' &
-                    sclact != '8' &
-                  ## Well-being
-                    happy != '88' & happy != '77' &
-                    inprdsc != '88' & inprdsc != '77' &
-                    health != '8' & happy != '7' &
-                    ctrlife != '88' & ctrlife != '77' &
-                  ## Prosocial Values
-                    actcomp != '8' & actcomp != '7' &
-                    sothnds != '8' &
-                    ipeqopta != '88' & ipeqopta != '66' &
-                    iphlppla != '88' & iphlppla != '77' & iphlppla != '66' & 
-                  ## Social Trust
-                    ppltrst != '99' & ppltrst != '88' & ppltrst != '77' &
-                    pplfair != '99' & pplfair != '88' & pplfair != '77' &
-                    pplhlp != '99' & pplhlp != '88' & pplhlp != '77' &
-                  ## Faith in Institutions
-                    trstplc != '88' &
-                    trstplt != '88' & trstplt != '77' &
-                    trstprl != '88' & trstprl != '77' &
-                    trstlgl != '88' & 
-                  ## Satisfaction with Institutions
-                    stfeco != '88' & stfeco != '77' &
-                    stfdem != '88' & stfdem != '77' &
-                    stfedu != '88' & stfedu != '77' & 
-                    psppsgva != '8' & psppsgva != '7' &
-                    psppipla != '8' & psppipla != '7' &
-                  ## Pleasure-Seeking Attitudes
-                    impdiffa != '88' & impdiffa != '66' &
-                    ipgdtima != '88' & ipgdtima != '77' & ipgdtima != '66' &
-                    ipadvnta != '88' & ipadvnta != '77' & ipadvnta != '66' &
-                    impfuna != '88' & impfuna != '77' & impfuna != '66' &
                   ## Traditional Values
                     imptrada != '99' & imptrada != '88' & imptrada != '77' & imptrada != '66' &
                     ipfrulea != '99' & ipfrulea != '88' & ipfrulea != '77' & ipfrulea != '66' &
                     ipbhprpa != '99' & ipbhprpa != '88' & ipbhprpa != '77' & ipbhprpa != '66' &
                     ipmodsta != '88' & ipmodsta != '77' & ipmodsta != '66' &
-                    lrnobed != '7' & lrnobed != '8' &
-                    loylead != '7' & loylead != '8' &
-                    hmsfmlsh != '7' & hmsfmlsh != '7' &
-                    hmsacld != '7' & hmsacld != '8')
-
+                    lrnobed != '7' & lrnobed != '8')
 
 ess_fp <- ess_nlhr %>% mutate(across(matches(c('rlgatnd', 'pray',
                                                'wprtbym',
                                                'imptrada', 'ipfrulea',
-                                               'ipbhprpa', 'loylead', 'lrnobed', 'hmsfmlsh', 'hmsacld', 'ipmodsta')), ~ 6 - .)) #Reverse code right-wing values
+                                               'ipbhprpa', 'lrnobed', 'ipmodsta')), ~ 6 - .)) # Reverse code variables as needed
 
-ess_fp_mvn <- ess_fp[,c('happy', 'inprdsc', 'health', 'ctrlife',
-                        'pplfair', 'pplhlp', 'ppltrst',
-                        'actcomp', 'sothnds', 'ipeqopta', 'iphlppla',
-                        'trstplc', 'trstplt', 'trstprl', 'trstlgl',
-                        'stfeco', 'stfdem', 'stfedu', 'psppsgva', 'psppipla',
-                        'impdiffa', 'ipgdtima', 'ipadvnta', 'impfuna')]
+ess_fp_mvn <- ess_fp[,c('rlgdgr', 'rlgatnd', 'pray', # Multivariate normality test
+                       'wsekpwr', 'weasoff', 'wexashr', wprtbym',
+                        'imptrada', 'ipfrulea', 'ipbhprpa', ipmodstra' 'lrnobed')] 
 ess_fp_mvn_na <- na.omit(ess_fp_mvn)
 mvn_test_fp <- mvn(data = ess_fp_mvn_na, mvnTest = c('hz'))
 mvn_test_fp$multivariateNormality
